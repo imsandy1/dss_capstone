@@ -1,4 +1,9 @@
 library(shiny)
+library(dplyr)
+library(tm)
+library(stringr)
+library(RSQLite)
+
 
 shinyUI(fluidPage(
     titlePanel("Next Word Prediction App"),

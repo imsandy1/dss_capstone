@@ -1,8 +1,14 @@
-
 library(shiny)
+library(dplyr)
+library(tm)
+library(stringr)
+library(RSQLite)
 
-db <- dbConnect(SQLite(), dbname="grams.db")
-ngram_backoff <- function(raw, db) {
+options(shiny.maxRequestSize=600*1024^2) 
+
+load("grams.Rda")
+
+ngram_backoff <- function(raw) {
     max = 3  # max n-gram - 1
     
     # process sentence
@@ -17,12 +23,13 @@ ngram_backoff <- function(raw, db) {
     
     for (i in min(length(sentence), max):1) {
         gram <- paste(tail(sentence, i), collapse=" ")
-        sql <- paste("SELECT word, gram, MAX(freq) FROM NGrams WHERE pre=='", paste(gram), "'",
-                     " AND n==", i + 1,sep="")
-        result <- dbSendQuery(conn=db, sql)
-        predicted <- dbFetch(result, n=-1)
+#        sql <- paste("SELECT word, gram, MAX(freq) FROM NGrams WHERE pre=='", paste(gram), "'",
+#                     " AND n==", i + 1,sep="")
+#        result <- dbSendQuery(conn=db, sql)
+#        predicted <- dbFetch(result, n=-1)
         
-        if (!is.na(predicted[1])) return(predicted)
+        predicted <- grams[grams$pre == gram, 3][which.max(grams[grams$pre == gram, 4])]
+        if (!identical(predicted, character(0))) return(predicted)
     }
     
     return("")
@@ -33,7 +40,7 @@ ngram_backoff <- function(raw, db) {
 shinyServer(function(input, output) {
     
     pred <- reactive({
-        ngram_backoff(input$text, db)[[1]]
+        ngram_backoff(input$text)[[1]]
     })
 
     
